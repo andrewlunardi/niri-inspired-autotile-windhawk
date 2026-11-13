@@ -2,7 +2,7 @@
 // @id              niri-inspired-autotiling
 // @name            Niri-inspired Auto Tiling
 // @description     Scrollable column tiling for Windows, inspired by niri: infinite horizontal strip, animations, focus ring, tabbed columns.
-// @version         0.1
+// @version         1.0
 // @author          AndrewLu99
 // @github          https://github.com/andrewlunardi
 // @include         explorer.exe
@@ -16,33 +16,36 @@
 
 Niri-style scrollable tiling for Windows. The mod runs inside `explorer.exe`
 and keeps, per monitor, a horizontal **strip of columns**. Each column holds
-one or more windows stacked vertically. The strip is wider than the screen
-when needed and scrolls to keep the focused column in view.
+one or more windows stacked vertically. The strip can be wider than the screen
+and scrolls to keep the focused column in view.
 
-## What's in 0.1.0
+## Features
 
 - **Infinite horizontal scroll.** Columns keep their width (default 50%) and
   the strip scrolls instead of squeezing everything into the screen.
-- **Real column model.** New windows open as a new column right of the focused
-  one. Move/consume/expel work on real columns, not on guessed geometry.
-- **Animations** (position and size) with easing.
-- **Focus ring** via the DWM border color (Windows 11).
-- **Tabbed columns** (windows stacked in the same spot, focus cycles).
+- **Real column model.** A new window opens as a new column to the right of the
+  focused one. Move, consume and expel operate on real columns.
+- **Animations** for position and size, with easing.
+- **Focus ring** through the DWM border color (Windows 11).
+- **Tabbed columns**: the windows of a column share the same spot and focus
+  cycles through them.
+- **Multi-monitor.** One strip per monitor, focus and move columns between
+  monitors, columns that are off-screen never leak onto a neighboring monitor.
 - **Minimum-size aware.** Asks windows for their minimum size and also learns it
   from what the window actually ended up with, then widens the column.
 - **Correct gaps.** Invisible resize borders of Win10/11 windows are compensated.
-- **Non-blocking.** Positioning is asynchronous, so a hung app cannot freeze
-  the mod or block unloading.
-- Dragging a window uses the real move/size events (not geometry guessing).
-- File Explorer windows can be tiled. Elevated windows are detected and skipped.
-- Ignore lists for processes and window classes.
-- Windows parked off-screen are restored on unload, and rescued after a crash.
-- Hardening (0.3.1): robust focus switching, stuck-drag recovery, no false
-  "minimum size" learning from slow apps, windows that Windows pulls back
-  from the parking area are re-parked, no animation across neighboring
-  monitors (avoids DPI-change glitches), safer handling of reused window handles.
+  Inner and outer gaps are separate settings.
+- **Safe.** Positioning is asynchronous, so a hung app cannot freeze the mod or
+  block unloading. Windows are restored on unload, and windows left off-screen
+  by a crash are rescued on the next start.
+- **Pause switch** that restores every window to where it was.
+- Real move/size events for dragging, fullscreen apps pause the mod, elevated
+  windows are detected and skipped, ignore lists for processes and classes,
+  File Explorer windows can be tiled.
 
-## Hotkeys (default modifier: Ctrl+Alt, configurable)
+## Hotkeys
+
+Default modifier is **Ctrl+Alt** (configurable in the settings).
 
 | Shortcut | Action |
 |----------|--------|
@@ -51,36 +54,51 @@ when needed and scrolls to keep the focused column in view.
 | `Home / End` | Focus first / last column |
 | `Shift+Left / Right` | Move column left / right |
 | `Shift+Up / Down` | Move window up / down inside the column |
-| `[` / `]` | Consume window into the left/right column, or expel it out of a stack |
+| `[` / `]` | Consume window into the left / right column, or expel it out of a stack |
 | `W` | Cycle column width 33 / 50 / 67 / 100% |
 | `Space` | Toggle full-width column |
 | `C` | Center the focused column |
 | `T` | Toggle tabbed column |
+| `,` / `.` | Focus the previous / next monitor |
+| `Shift+,` / `Shift+.` | Move the focused column to the previous / next monitor |
 | `Shift+F` | Toggle floating |
-| `R` | Retile (also un-floats everything) |
+| `R` | Retile (un-floats everything, forgets learned minimum sizes) |
+| `P` | Pause / resume tiling (restores all windows while paused) |
 
-Some combinations (for example Ctrl+Alt+Arrows when Intel graphics hotkeys are
-enabled, or Win+R / Win+T) are already taken. Pick the Ctrl+Alt+Win modifier in
-the settings to avoid most conflicts. Registration failures are written to the log.
+Some combinations are already taken by Windows or by drivers (for example
+Ctrl+Alt+Arrows with Intel graphics hotkeys, or Win+R / Win+T). Choose the
+Ctrl+Alt+Win modifier in the settings to avoid most conflicts. Failed
+registrations are written to the log.
 
-## Behavior on multiple monitors
+## Multiple monitors
 
-Windows on Windows cannot be clipped to a monitor. Columns that are not
+A window cannot be clipped to one monitor on Windows. Columns that are not
 (fully) visible are therefore parked just outside the virtual desktop, so they
 never show up on the neighboring monitor. Partially visible columns ("peeking")
 are only shown on sides that have no neighboring monitor.
 
+## Troubleshooting
+
+- **A window does not tile.** It may be fixed-size, a dialog or tool window,
+  always-on-top, maximized, elevated, UWP (see the setting), or matched by an
+  ignore list. Turn on *Verbose log* to see what the mod decides.
+- **A window is lost off-screen.** Press the pause hotkey, or disable the mod:
+  both put every window back where it was.
+- **Hotkeys do nothing.** Check the log for registration failures and change
+  the hotkey modifier.
+- **Flicker in heavy apps** (browsers, IDEs): turn off *Animate size changes*.
+- **No focus ring.** It needs Windows 11 (build 22000 or newer).
+
 ## Limitations that cannot be fixed from inside a Windhawk mod
 
 - **Elevated (admin) windows** cannot be moved by a non-elevated Explorer
-  (UIPI). They are detected and left floating.
+  (UIPI). They are detected and never tiled.
 - **Minimum size:** the mod can only respect it. It cannot make an app shrink
-  below what it allows, so the column becomes wider and the strip scrolls.
-- **Focus ring** is the 1px DWM border color (Windows 11 only), not a thick
-  compositor ring. A thick ring would need an overlay window.
-- **Tabbed columns** stack the windows in place. There is no tab bar.
-- Workspaces are not implemented. Windows from all virtual desktops share the
-  strip; windows on other desktops are simply skipped while they are cloaked.
+  below what the app allows, so the column becomes wider and the strip scrolls.
+- **Focus ring** is the 1px DWM border color, not a thick compositor ring.
+- **Tabbed columns** stack the windows in place, there is no tab bar.
+- **Workspaces** are not implemented. Windows of all virtual desktops share the
+  strip and windows of other desktops are skipped while they are cloaked.
 - Fullscreen apps and presentations pause the mod.
 */
 // ==/WindhawkModReadme==
@@ -88,8 +106,9 @@ are only shown on sides that have no neighboring monitor.
 // ==WindhawkModSettings==
 /*
 - gap: 12
-  $name: Gap (pixels)
-  $description: Space between windows and between windows and the work area edge.
+  $name: Gap between windows (pixels)
+- outerGap: 12
+  $name: Gap to the screen edges (pixels)
 - defaultColumnWidthPercent: 50
   $name: New column width (%)
   $description: Width of a new column as a percentage of the work area. The width hotkey cycles 33 / 50 / 67 / 100%.
@@ -139,6 +158,9 @@ are only shown on sides that have no neighboring monitor.
 - ignoredClasses: ["#32770"]
   $name: Ignored window classes
   $description: Windows of these classes are never tiled.
+- verboseLog: false
+  $name: Verbose log
+  $description: Logs which windows are tiled or rejected, and why.
 */
 // ==/WindhawkModSettings==
 
@@ -152,7 +174,6 @@ are only shown on sides that have no neighboring monitor.
 #include <map>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -175,6 +196,9 @@ enum HotkeyId {
     kHkConsumeLeft, kHkConsumeRight,
     kHkCycleWidth, kHkFullWidth, kHkCenter, kHkTabbed,
     kHkToggleFloat, kHkRetile, kHkFirst, kHkLast,
+    kHkFocusMonPrev, kHkFocusMonNext, kHkMoveMonPrev, kHkMoveMonNext,
+    kHkTogglePause,
+    kHkCount,                               // keep last: number of ids + 1
 };
 
 // ---------------------------------------------------------------------------
@@ -182,6 +206,7 @@ enum HotkeyId {
 // ---------------------------------------------------------------------------
 struct Settings {
     int  gap                       = 12;
+    int  outerGap                  = 12;
     int  defaultColumnWidthPercent = 50;
     int  singleWindowWidthPercent  = 70;
     bool centerSingleColumn        = true;
@@ -197,6 +222,7 @@ struct Settings {
     bool enableHotkeys             = true;
     int  modifierMode              = 0;     // 0 Ctrl+Alt, 1 Win, 2 Ctrl+Alt+Win
     int  retileIntervalMs          = 1500;
+    bool verboseLog                = false;
     std::vector<std::wstring> ignoredProcesses;
     std::vector<std::wstring> ignoredClasses;
 };
@@ -232,6 +258,7 @@ COLORREF ParseColor(PCWSTR s, COLORREF fallback) {
 void LoadSettings() {
     Settings s;
     s.gap                       = ClampI(Wh_GetIntSetting(L"gap"), 0, 64);
+    s.outerGap                  = ClampI(Wh_GetIntSetting(L"outerGap"), 0, 128);
     s.defaultColumnWidthPercent = ClampI(Wh_GetIntSetting(L"defaultColumnWidthPercent"), 20, 100);
     s.singleWindowWidthPercent  = ClampI(Wh_GetIntSetting(L"singleWindowWidthPercent"), 30, 100);
     s.centerSingleColumn        = Wh_GetIntSetting(L"centerSingleColumn") != 0;
@@ -245,6 +272,7 @@ void LoadSettings() {
     s.tileUwpApps               = Wh_GetIntSetting(L"tileUwpApps") != 0;
     s.enableHotkeys             = Wh_GetIntSetting(L"enableHotkeys") != 0;
     s.retileIntervalMs          = ClampI(Wh_GetIntSetting(L"retileIntervalMs"), 0, 10000);
+    s.verboseLog                = Wh_GetIntSetting(L"verboseLog") != 0;
 
     PCWSTR color = Wh_GetStringSetting(L"focusRingColor");
     s.ringColor = ParseColor(color, s.ringColor);
@@ -334,6 +362,11 @@ DWORD g_intentTick  = 0;
 
 void Relayout();
 void ReconcileMoving();
+void RestoreEverything();
+
+bool g_paused = false;
+
+#define LOGV(...) do { if (g_cfg.verboseLog) Wh_Log(__VA_ARGS__); } while (0)
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -516,7 +549,7 @@ Verdict Classify(HWND hwnd) {
                    ? Verdict::Yes : Verdict::Never;
     }
     if (IsOutOfReach(pid)) {
-        Wh_Log(L"Skipping window %p: process is out of reach (elevated?)", hwnd);
+        LOGV(L"Skipping window %p: process is out of reach (elevated?)", hwnd);
         return Verdict::Never;
     }
     return Verdict::Yes;
@@ -589,6 +622,7 @@ void AddWindow(HWND h) {
     w.to = w.cur;
     QueryMinSize(h, w);
     const HMONITOR mon = w.mon;
+    LOGV(L"Tiling %p  class=%ls  exe=%ls", h, GetClass(h).c_str(), GetExeName(w.pid).c_str());
     g_wins.emplace(h, std::move(w));
     InsertColumnAfterFocus(mon, h);
 }
@@ -625,6 +659,7 @@ void PruneDead() {
             alive = pid == it->second.pid;      // reused handle => treat as dead
         }
         if (alive) { ++it; continue; }
+        LOGV(L"Forgetting window %p", it->first);
         RemoveFromColumns(it->first);
         if (g_ringWnd == it->first) g_ringWnd = nullptr;
         if (g_intentWnd == it->first) g_intentWnd = nullptr;
@@ -654,22 +689,29 @@ std::vector<MonInfo> GetMonitors() {
     return v;
 }
 
-// A monitor that disappeared hands its columns to the primary one.
+// A monitor that disappeared hands its columns to the monitor that now holds
+// their windows (primary as fallback).
 void ReconcileMonitors(const std::vector<MonInfo>& mons) {
     if (mons.empty()) return;
     HMONITOR primary = mons.front().hmon;
     for (const auto& m : mons) if (m.primary) primary = m.hmon;
+    const auto known = [&](HMONITOR h) {
+        return std::any_of(mons.begin(), mons.end(), [&](const MonInfo& m) { return m.hmon == h; });
+    };
 
     for (auto it = g_strips.begin(); it != g_strips.end();) {
-        const bool exists = std::any_of(mons.begin(), mons.end(),
-                                        [&](const MonInfo& m) { return m.hmon == it->first; });
-        if (exists) { ++it; continue; }
-        Strip& dst = g_strips[primary];
-        for (Column& c : it->second.cols) {
-            for (HWND h : c.wins) g_wins[h].mon = primary;
-            dst.cols.push_back(std::move(c));
-        }
+        if (known(it->first)) { ++it; continue; }
+        std::vector<Column> orphans = std::move(it->second.cols);
         it = g_strips.erase(it);
+        for (Column& c : orphans) {
+            HMONITOR target = primary;
+            if (!c.wins.empty()) {
+                const HMONITOR holder = MonitorFromWindow(c.wins.front(), MONITOR_DEFAULTTONEAREST);
+                if (known(holder)) target = holder;
+            }
+            for (HWND h : c.wins) g_wins[h].mon = target;
+            g_strips[target].cols.push_back(std::move(c));
+        }
     }
 }
 
@@ -779,8 +821,9 @@ bool StepAnimations(DWORD now) {
 void LayoutStrip(Strip& s, const MonInfo& m, const std::vector<MonInfo>& mons, DWORD now) {
     const RECT wa  = m.work;
     const int  gap = g_cfg.gap;
-    const int  usableW = RW(wa) - gap * 2;
-    const int  usableH = RH(wa) - gap * 2;
+    const int  outer = g_cfg.outerGap;
+    const int  usableW = RW(wa) - outer * 2;
+    const int  usableH = RH(wa) - outer * 2;
     if (usableW < 200 || usableH < 150) return;
 
     struct Item {
@@ -855,7 +898,7 @@ void LayoutStrip(Strip& s, const MonInfo& m, const std::vector<MonInfo>& mons, D
     // ----- assign rectangles -----
     for (Item& it : items) {
         const Column& col = s.cols[it.col];
-        const int left  = wa.left + gap - s.target + it.x;
+        const int left  = wa.left + outer - s.target + it.x;
         const int right = left + it.w;
 
         int park = 0;   // -1 = park left of the desktop, +1 = park right of it
@@ -893,7 +936,7 @@ void LayoutStrip(Strip& s, const MonInfo& m, const std::vector<MonInfo>& mons, D
             }
         }
 
-        int top = wa.top + gap;
+        int top = wa.top + outer;
         for (int i = 0; i < n; ++i) {
             RECT to{px, top, px + it.w, top + hs[i]};
             SetTarget(it.act[i], g_wins[it.act[i]], to, now, snapParked);
@@ -947,6 +990,7 @@ void UpdateRing() {
 // Re-layout driver
 // ---------------------------------------------------------------------------
 void Relayout() {
+    if (g_paused) return;
     if (g_inRelayout) {            // e.g. an event delivered while we wait on an app
         g_relayoutPending = true;
         return;
@@ -1353,11 +1397,97 @@ void RetileAll() {
     Relayout();
 }
 
+std::vector<MonInfo> MonitorsLeftToRight() {
+    std::vector<MonInfo> v = GetMonitors();
+    std::sort(v.begin(), v.end(), [](const MonInfo& a, const MonInfo& b) {
+        return a.rect.left != b.rect.left ? a.rect.left < b.rect.left : a.rect.top < b.rect.top;
+    });
+    return v;
+}
+
+HMONITOR NeighborMonitor(HMONITOR cur, int d) {
+    const std::vector<MonInfo> v = MonitorsLeftToRight();
+    for (size_t i = 0; i < v.size(); ++i) {
+        if (v[i].hmon != cur) continue;
+        const long j = static_cast<long>(i) + d;
+        return (j >= 0 && j < static_cast<long>(v.size())) ? v[static_cast<size_t>(j)].hmon : nullptr;
+    }
+    return nullptr;
+}
+
+HMONITOR StripMonitor(const Strip* s) {
+    for (const auto& [mon, st] : g_strips) if (&st == s) return mon;
+    return nullptr;
+}
+
+void FocusMonitorDelta(int d) {
+    Strip* s = CurrentStrip();
+    if (!s) return;
+    const HMONITOR target = NeighborMonitor(StripMonitor(s), d);
+    auto it = g_strips.find(target);
+    if (!target || it == g_strips.end()) return;
+
+    Strip& t = it->second;
+    HWND h = nullptr;
+    const int fc = FindColumn(t, t.focusWin);
+    if (fc >= 0) h = PickActive(t.cols[static_cast<size_t>(fc)]);
+    if (!h) for (Column& c : t.cols) if ((h = PickActive(c))) break;
+    if (h) FocusWindow(t, h);
+}
+
+void MoveColumnToMonitor(int d) {
+    Strip* s = CurrentStrip();
+    if (!s) return;
+    const HMONITOR to = NeighborMonitor(StripMonitor(s), d);
+    const int ci = FindColumn(*s, s->focusWin);
+    if (!to || ci < 0) return;
+
+    Column col = std::move(s->cols[static_cast<size_t>(ci)]);
+    s->cols.erase(s->cols.begin() + ci);
+    s->focusWin = s->cols.empty() ? nullptr
+                : s->cols[static_cast<size_t>(ci > 0 ? ci - 1 : 0)].wins.front();
+
+    HWND moved = PickActive(col);
+    if (!moved) moved = col.wins.front();
+    for (HWND h : col.wins) {
+        auto w = g_wins.find(h);
+        if (w == g_wins.end()) continue;
+        w->second.mon = to;
+        w->second.hasCur = false;          // snap to the new monitor, no cross-monitor slide
+        w->second.animating = false;
+    }
+
+    Strip& t = g_strips[to];
+    const int fc = FindColumn(t, t.focusWin);
+    const size_t pos = fc < 0 ? t.cols.size() : static_cast<size_t>(fc) + 1;
+    t.cols.insert(t.cols.begin() + static_cast<std::ptrdiff_t>(pos), std::move(col));
+    t.focusWin = moved;
+    Relayout();
+}
+
+// Pause restores every window and forgets the layout; resume rediscovers all.
+void TogglePause() {
+    g_paused = !g_paused;
+    if (g_paused) {
+        RestoreEverything();
+        g_wins.clear();
+        g_strips.clear();
+        g_blocked.clear();
+        g_ringWnd = nullptr;
+        g_intentWnd = nullptr;
+        g_firstScan = true;
+        Wh_Log(L"Auto-tiling paused");
+    } else {
+        Wh_Log(L"Auto-tiling resumed");
+        Relayout();
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Hotkeys
 // ---------------------------------------------------------------------------
 void RegisterModHotkeys() {
-    for (int id = 1; id <= kHkLast; ++id) UnregisterHotKey(nullptr, id);
+    for (int id = 1; id < kHkCount; ++id) UnregisterHotKey(nullptr, id);
     if (!g_cfg.enableHotkeys) return;
 
     const UINT modBits = g_cfg.modifierMode == 1 ? MOD_WIN
@@ -1386,6 +1516,11 @@ void RegisterModHotkeys() {
         {kHkTabbed,       base,  'T',      L"toggle tabbed"},
         {kHkToggleFloat,  shift, 'F',      L"toggle floating"},
         {kHkRetile,       base,  'R',      L"retile"},
+        {kHkFocusMonPrev, base,  VK_OEM_COMMA,  L"focus previous monitor"},
+        {kHkFocusMonNext, base,  VK_OEM_PERIOD, L"focus next monitor"},
+        {kHkMoveMonPrev,  shift, VK_OEM_COMMA,  L"move column to previous monitor"},
+        {kHkMoveMonNext,  shift, VK_OEM_PERIOD, L"move column to next monitor"},
+        {kHkTogglePause,  base,  'P',      L"pause / resume"},
     };
     for (const Def& d : defs) {
         if (!RegisterHotKey(nullptr, d.id, d.mods, d.vk)) {
@@ -1395,6 +1530,7 @@ void RegisterModHotkeys() {
 }
 
 void HandleHotkey(int id) {
+    if (g_paused && id != kHkTogglePause) return;
     switch (id) {
         case kHkFocusLeft:    FocusColumnDelta(-1);  break;
         case kHkFocusRight:   FocusColumnDelta(+1);  break;
@@ -1414,6 +1550,11 @@ void HandleHotkey(int id) {
         case kHkTabbed:       ToggleColumnFlag(&Column::tabbed); break;
         case kHkToggleFloat:  ToggleFloating();      break;
         case kHkRetile:       RetileAll();           break;
+        case kHkFocusMonPrev: FocusMonitorDelta(-1); break;
+        case kHkFocusMonNext: FocusMonitorDelta(+1); break;
+        case kHkMoveMonPrev:  MoveColumnToMonitor(-1); break;
+        case kHkMoveMonNext:  MoveColumnToMonitor(+1); break;
+        case kHkTogglePause:  TogglePause();         break;
     }
 }
 
@@ -1599,7 +1740,7 @@ DWORD WINAPI WorkerThreadProc(void*) {
     for (UINT_PTR* t : {&g_timerPeriodic, &g_timerRelayout, &g_timerAnim, &g_timerVerify}) {
         if (*t) { KillTimer(nullptr, *t); *t = 0; }
     }
-    for (int id = 1; id <= kHkLast; ++id) UnregisterHotKey(nullptr, id);
+    for (int id = 1; id < kHkCount; ++id) UnregisterHotKey(nullptr, id);
     RemoveHooks();
     RestoreEverything();
 
@@ -1615,7 +1756,7 @@ DWORD WINAPI WorkerThreadProc(void*) {
 // Windhawk entry points
 // ---------------------------------------------------------------------------
 BOOL Wh_ModInit() {
-    Wh_Log(L"Niri-inspired Auto Tiling v0.3.1 - init");
+    Wh_Log(L"Niri-inspired Auto Tiling v1.0 - init");
     LoadSettings();
 
     g_ready = CreateEventW(nullptr, TRUE, FALSE, nullptr);
@@ -1646,7 +1787,6 @@ BOOL Wh_ModInit() {
     return TRUE;
 }
 
-// The mod is being unloaded, free all allocated resources.
 void Wh_ModUninit() {
     Wh_Log(L"Niri-inspired Auto Tiling - uninit");
     if (g_threadId) PostThreadMessageW(g_threadId, WM_QUIT, 0, 0);
@@ -1659,7 +1799,6 @@ void Wh_ModUninit() {
     g_threadId = 0;
 }
 
-// The mod setting were changed, reload them.
 void Wh_ModSettingsChanged() {
     // Settings are re-read on the worker thread, which owns all state.
     if (g_threadId) PostThreadMessageW(g_threadId, kMsgSettings, 0, 0);
